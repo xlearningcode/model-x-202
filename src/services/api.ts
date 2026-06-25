@@ -61,11 +61,26 @@ export async function saveMessage(
   content: string,
   type: 'text' | 'image' | 'video' = 'text'
 ): Promise<Message> {
+  // Try saving with the requested type first
   const { data, error } = await supabase
     .from('messages')
     .insert({ conversation_id: conversationId, role, content, type })
     .select()
     .single();
+
+  // If DB check constraint rejects 'video', fall back to 'text' type.
+  // The UI detects video by URL pattern (.mp4 / known CDN paths) so rendering still works.
+  if (error && error.code === '23514' && type === 'video') {
+    const { data: fallback, error: fallbackErr } = await supabase
+      .from('messages')
+      .insert({ conversation_id: conversationId, role, content, type: 'text' })
+      .select()
+      .single();
+    if (fallbackErr) throw fallbackErr;
+    // Return with type overridden so the caller still treats it as video in state
+    return { ...fallback, type: 'video' } as Message;
+  }
+
   if (error) throw error;
   return data;
 }

@@ -997,7 +997,7 @@ const Chat: React.FC = () => {
               className="max-w-full rounded-lg"
               loading="lazy"
             />
-          ) : msg.type === 'video' ? (
+          ) : msg.type === 'video' || /\.(mp4|webm|mov)(\?|$)/i.test(msg.content) ? (
             <video
               src={msg.content}
               controls
@@ -1012,7 +1012,7 @@ const Chat: React.FC = () => {
               {new Date(msg.created_at).toLocaleTimeString()}
             </span>
             <div className="flex items-center gap-1">
-              {!isUser && msg.type === 'text' && (
+              {!isUser && msg.type === 'text' && !/\.(mp4|webm|mov)(\?|$)/i.test(msg.content) && (
                 <>
                   <Button
                     variant="ghost"
@@ -1070,7 +1070,7 @@ const Chat: React.FC = () => {
                   </Button>
                 </>
               )}
-              {!isUser && (msg.type === 'image' || msg.type === 'video') && (
+              {!isUser && (msg.type === 'image' || msg.type === 'video' || /\.(mp4|webm|mov)(\?|$)/i.test(msg.content)) && (
                 <Button
                   variant="ghost"
                   size="icon"
