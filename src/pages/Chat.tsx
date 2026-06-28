@@ -118,6 +118,7 @@ const Chat: React.FC = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const lastSendTimeRef = useRef<number>(0);
 
   useEffect(() => {
     if (!user) {
@@ -323,7 +324,8 @@ const Chat: React.FC = () => {
         setRetryInfo(null);
         return;
       } catch (err: any) {
-        const is429 = err?.message?.includes('429') || err?.response?.status === 429;
+        // 429 errors are thrown as "Rate limit reached. Please wait Xs..."
+        const is429 = err?.message?.includes('Rate limit reached') || err?.message?.includes('429');
         if (is429 && attempt < maxRetries) {
           const delay = Math.pow(2, attempt + 1) * 1000; // 2s, 4s, 8s
           const msg = `Service is busy, retrying in ${delay / 1000}s... (${attempt + 1}/${maxRetries})`;
@@ -346,6 +348,15 @@ const Chat: React.FC = () => {
     if (!input.trim() && !uploadedImage) return;
     // Enforce daily message limit for free users
     if (!checkMsgLimit()) return;
+
+    // Client-side cooldown: prevent rapid-fire requests that trigger upstream 429
+    const now = Date.now();
+    const COOLDOWN_MS = 2000;
+    if (now - lastSendTimeRef.current < COOLDOWN_MS) {
+      toast.info(`Please wait ${Math.ceil((COOLDOWN_MS - (now - lastSendTimeRef.current)) / 1000)}s before sending.`);
+      return;
+    }
+    lastSendTimeRef.current = now;
 
     // Auto-create conversation if none is active
     let convId = activeConversation;

@@ -57,10 +57,10 @@ serve(async (req: Request): Promise<Response> => {
 
   if (upstream.status === 429 || upstream.status === 402) {
     const errText = await upstream.text();
-    return new Response(errText, {
-      status: upstream.status,
-      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-    });
+    const headers: Record<string, string> = { "Content-Type": "application/json", ...CORS_HEADERS };
+    const retryAfter = upstream.headers.get("retry-after");
+    if (retryAfter) headers["retry-after"] = retryAfter;
+    return new Response(errText, { status: upstream.status, headers });
   }
 
   if (!upstream.ok || !upstream.body) {

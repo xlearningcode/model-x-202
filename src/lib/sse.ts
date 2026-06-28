@@ -77,16 +77,13 @@ export async function sendStreamRequest(options: StreamRequestOptions): Promise<
     if (response.status === 429) {
       const retryAfter = response.headers.get('retry-after');
       const wait = retryAfter ? parseInt(retryAfter, 10) : 60;
-      onError(new Error(`Rate limit reached. Please wait ${wait}s before sending another message.`));
-      return;
+      throw new Error(`Rate limit reached. Please wait ${wait}s before sending another message.`);
     }
     if (response.status === 402) {
-      onError(new Error('Insufficient balance on AI service. Please try again later.'));
-      return;
+      throw new Error('Insufficient balance on AI service. Please try again later.');
     }
     if (!response.ok) {
-      onError(new Error(`Request failed with status ${response.status}`));
-      return;
+      throw new Error(`Request failed with status ${response.status}`);
     }
   } catch (err) {
     if (!signal?.aborted) onError(err as Error);
