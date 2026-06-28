@@ -38,6 +38,11 @@ serve(async (req: Request): Promise<Response> => {
     });
   }
 
+  // Ensure model_name is always set — gateway requires it explicitly
+  if (!requestBody.model_name) {
+    requestBody = { model_name: "kling-v3-omni", ...requestBody };
+  }
+
   const upstream = await fetch(
     "https://app-cinpfjatarr5-api-k93RvqRrRZba.gateway.appmedo.com/v1/videos/omni-video",
     {
@@ -59,8 +64,10 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   if (!upstream.ok) {
+    // Forward the actual upstream error body so the client can show a meaningful message
+    const errText = await upstream.text();
     return new Response(
-      JSON.stringify({ error: `Upstream error: ${upstream.status}` }),
+      JSON.stringify({ error: `Upstream error: ${upstream.status}`, detail: errText }),
       { status: 502, headers: { "Content-Type": "application/json", ...CORS_HEADERS } }
     );
   }

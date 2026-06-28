@@ -572,6 +572,7 @@ const Chat: React.FC = () => {
     try {
       const { task_id } = await submitKlingOmniVideo({
         prompt,
+        model_name: 'kling-v3-omni',
         mode: 'pro',
         duration: '5',
         sound: 'on',
